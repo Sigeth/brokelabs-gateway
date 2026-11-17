@@ -29,6 +29,9 @@ yanked = "deny"
 ignore = [
   { id = "RUSTSEC-2023-0071", reason = "rsa (Marvin attack): RSA keys are never used" },
   { id = "RUSTSEC-2026-0387", reason = "crypto-bigint 0.5 via p256/p384: ECDSA keys are never used" },
+  # Unmaintained, not a vulnerability. Only russh-util uses it (no russh release
+  # without it yet): check at every russh upgrade and drop this when possible.
+  { id = "RUSTSEC-2026-0543", reason = "chrono unmaintained, transitive via russh-util: re-check at each russh upgrade" },
 ]
 
 [sources]
