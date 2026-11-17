@@ -1,6 +1,6 @@
-# opslab-gateway
+# brokelabs-gateway
 
-The access plane of opslab (working name). All student traffic into instances goes through it: browser terminals, web endpoints and the IDE. It holds no database and no secrets. It only trusts short-lived access tokens signed by the [api](https://github.com/Sigeth/opslab-api), whose public keys it fetches from the api's JWKS endpoint.
+The access plane of BrokeLabs. All student traffic into instances goes through it: browser terminals, web endpoints and the IDE. It holds no database and no secrets. It only trusts short-lived access tokens signed by the [api](https://github.com/Sigeth/brokelabs-api), whose public keys it fetches from the api's JWKS endpoint.
 
 > Status: M1. Terminals into `pod` machines through Kubernetes exec. SSH terminals (VMs) come in M2, and the web/IDE proxy in M6.
 
@@ -17,23 +17,23 @@ The access plane of opslab (working name). All student traffic into instances go
 
 | Variable | Default | |
 |---|---|---|
-| `OPSLAB_LISTEN` | `0.0.0.0:8081` | Listen address |
-| `OPSLAB_JWKS_URL` | `http://opslab-api:8080/.well-known/jwks.json` | api public keys |
-| `OPSLAB_JWKS_REFRESH_SECS` | `300` | Key refresh interval |
-| `OPSLAB_TERMINAL_IDLE_SECS` | `1800` | Terminals without input for this long are closed |
-| `OPSLAB_LOG_FORMAT` | text | `json` for JSON logs |
+| `BROKELABS_LISTEN` | `0.0.0.0:8081` | Listen address |
+| `BROKELABS_JWKS_URL` | `http://brokelabs-api:8080/.well-known/jwks.json` | api public keys |
+| `BROKELABS_JWKS_REFRESH_SECS` | `300` | Key refresh interval |
+| `BROKELABS_TERMINAL_IDLE_SECS` | `1800` | Terminals without input for this long are closed |
+| `BROKELABS_LOG_FORMAT` | text | `json` for JSON logs |
 
 ## Development
 
 ```sh
 make lint test
-OPSLAB_JWKS_URL=http://localhost:8080/.well-known/jwks.json make run
+BROKELABS_JWKS_URL=http://localhost:8080/.well-known/jwks.json make run
 make image   # linux/amd64 (podman or docker)
 ```
 
 ## Permissions
 
-The gateway reads `ChallengeInstance`s in the instances namespace. The operator binds it the `opslab-gateway-exec` ClusterRole (`pods/exec`) in each instance namespace, so it can exec into machines and nowhere else.
+The gateway reads `ChallengeInstance`s in the instances namespace. The operator binds it the `brokelabs-gateway-exec` ClusterRole (`pods/exec`) in each instance namespace, so it can exec into machines and nowhere else.
 
 ## License
 

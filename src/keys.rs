@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 
 use anyhow::Context;
-use opslab_auth::{JwkSet, Verifier};
+use brokelabs_auth::{JwkSet, Verifier};
 
 /// Minimum time between two on-demand refreshes, so tokens with made-up key
 /// IDs cannot make the gateway hammer the api.
@@ -132,7 +132,7 @@ pub async fn refresh_forever(
 mod tests {
     use axum::Router;
     use axum::routing::get;
-    use opslab_auth::Signer;
+    use brokelabs_auth::Signer;
 
     use super::*;
 

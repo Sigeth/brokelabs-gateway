@@ -17,19 +17,19 @@ use axum::extract::ws::rejection::WebSocketUpgradeRejection;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use brokelabs_auth::{AccessClaims, AccessKind};
+use brokelabs_types::ChallengeInstance;
+use brokelabs_types::conventions::{
+    MACHINE_CONTAINER, SSH_PORT, SSH_SECRET, SSH_SECRET_KNOWN_HOSTS, SSH_SECRET_STUDENT_KEY,
+    STUDENT_USER,
+};
+use brokelabs_types::generated::challengeinstances::{
+    ChallengeInstanceStatusMachinesRuntime, ChallengeInstanceStatusPhase,
+};
 use futures::{SinkExt, StreamExt};
 use k8s_openapi::api::core::v1::{Pod, Secret};
 use kube::api::{AttachParams, AttachedProcess, TerminalSize};
 use kube::{Api, Client};
-use opslab_auth::{AccessClaims, AccessKind};
-use opslab_types::ChallengeInstance;
-use opslab_types::conventions::{
-    MACHINE_CONTAINER, SSH_PORT, SSH_SECRET, SSH_SECRET_KNOWN_HOSTS, SSH_SECRET_STUDENT_KEY,
-    STUDENT_USER,
-};
-use opslab_types::generated::challengeinstances::{
-    ChallengeInstanceStatusMachinesRuntime, ChallengeInstanceStatusPhase,
-};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::sync::mpsc;
@@ -396,21 +396,21 @@ fn exit_message(message: &str) -> Message {
 
 #[cfg(test)]
 mod tests {
-    use opslab_auth::AccessGrant;
+    use brokelabs_auth::AccessGrant;
     use serde_json::json;
 
     use super::*;
 
     fn claims(user: &str, machine: &str, kind: AccessKind) -> AccessClaims {
         AccessClaims {
-            iss: "opslab-api".into(),
-            aud: "opslab-gateway".into(),
+            iss: "brokelabs-api".into(),
+            aud: "brokelabs-gateway".into(),
             exp: 0,
             iat: 0,
             jti: "j".into(),
             grant: AccessGrant {
                 user_id: user.into(),
-                instance: "opslab-instances/hello-1".into(),
+                instance: "brokelabs-instances/hello-1".into(),
                 machine: machine.into(),
                 kind,
             },
@@ -419,8 +419,8 @@ mod tests {
 
     fn instance(phase: &str) -> ChallengeInstance {
         serde_json::from_value(json!({
-            "apiVersion": "opslab.io/v1alpha1", "kind": "ChallengeInstance",
-            "metadata": {"name": "hello-1", "namespace": "opslab-instances"},
+            "apiVersion": "brokelabs.io/v1alpha1", "kind": "ChallengeInstance",
+            "metadata": {"name": "hello-1", "namespace": "brokelabs-instances"},
             "spec": {"challenge": "hello", "owner": {"userID": "u1"}},
             "status": {"phase": phase, "namespace": "inst-hello-1", "machines": [
                 {"name": "box", "runtime": "pod", "ready": true, "pod": "box"},

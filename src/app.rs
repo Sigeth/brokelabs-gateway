@@ -9,7 +9,7 @@ use axum::http::request::Parts;
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Json, Response};
 use axum::routing::get;
-use opslab_auth::AccessClaims;
+use brokelabs_auth::AccessClaims;
 use serde::Deserialize;
 use tower_http::trace::TraceLayer;
 
@@ -92,7 +92,7 @@ impl FromRequestParts<AppState> for Access {
         };
         let mut result = verifier.verify(&token);
         // A key the gateway does not know yet: the api may have rotated it.
-        if matches!(result, Err(opslab_auth::Error::UnknownKeyId(_)))
+        if matches!(result, Err(brokelabs_auth::Error::UnknownKeyId(_)))
             && state.keys.refresh_now().await
             && let Some(verifier) = state.keys.verifier()
         {
@@ -114,8 +114,8 @@ mod tests {
 
     use axum::body::Body;
     use axum::http::Request;
+    use brokelabs_auth::{AccessGrant, AccessKind, Signer};
     use http_body_util::BodyExt;
-    use opslab_auth::{AccessGrant, AccessKind, Signer};
     use tower::ServiceExt;
 
     use super::*;
@@ -128,7 +128,7 @@ mod tests {
             &self,
             _: &str,
             _: &str,
-        ) -> kube::Result<Option<opslab_types::ChallengeInstance>> {
+        ) -> kube::Result<Option<brokelabs_types::ChallengeInstance>> {
             Ok(None)
         }
         async fn shell(&self, _: &terminal::Target) -> anyhow::Result<terminal::Shell> {
@@ -171,7 +171,7 @@ mod tests {
     fn token(signer: &Signer) -> String {
         let grant = AccessGrant {
             user_id: "42".into(),
-            instance: "opslab-instances/hello-alice".into(),
+            instance: "brokelabs-instances/hello-alice".into(),
             machine: "box".into(),
             kind: AccessKind::Terminal {
                 user: "student".into(),

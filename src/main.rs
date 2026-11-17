@@ -1,4 +1,4 @@
-//! opslab gateway: carries students' traffic (terminals, web endpoints, IDE)
+//! BrokeLabs gateway: carries students' traffic (terminals, web endpoints, IDE)
 //! into their instances, after verifying the api's access tokens.
 
 mod app;

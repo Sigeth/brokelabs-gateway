@@ -23,7 +23,7 @@ wildcards = "deny"
 
 [advisories]
 yanked = "deny"
-# jsonwebtoken's rust_crypto backend compiles every algorithm family. opslab
+# jsonwebtoken's rust_crypto backend compiles every algorithm family. BrokeLabs
 # only signs and verifies EdDSA (Ed25519); Verifier rejects any other "alg",
 # so the RSA and ECDSA code below is never reached. Revisit when upgrading.
 ignore = [
@@ -36,4 +36,4 @@ unknown-registry = "deny"
 unknown-git = "deny"
 
 # The shared crates are consumed from their git tags until published to crates.io.
-allow-git = ["https://github.com/Sigeth/opslab-core-rs"]
+allow-git = ["https://github.com/Sigeth/brokelabs-core-rs"]

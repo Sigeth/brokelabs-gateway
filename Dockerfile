@@ -7,10 +7,10 @@ COPY Cargo.toml Cargo.lock ./
 COPY src src
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/target \
-    cargo build --release && cp target/release/opslab-gateway /opslab-gateway
+    cargo build --release && cp target/release/brokelabs-gateway /brokelabs-gateway
 
 FROM gcr.io/distroless/static-debian12:nonroot
-COPY --from=build /opslab-gateway /opslab-gateway
+COPY --from=build /brokelabs-gateway /brokelabs-gateway
 USER 65532:65532
 EXPOSE 8081
-ENTRYPOINT ["/opslab-gateway"]
+ENTRYPOINT ["/brokelabs-gateway"]
