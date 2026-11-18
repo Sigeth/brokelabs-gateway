@@ -1,5 +1,5 @@
 //! Browser terminals: WebSocket ↔ a shell on a machine, through Kubernetes
-//! exec (pod and sysbox machines) or SSH (vm machines, see [`crate::ssh`]).
+//! exec (pod and userns machines) or SSH (vm machines, see [`crate::ssh`]).
 //!
 //! Protocol on the WebSocket:
 //! - client → gateway: binary frames are keystrokes (stdin); text frames are
@@ -103,7 +103,7 @@ pub fn resolve(
     match machine.runtime {
         // Through exec, as the container user.
         ChallengeInstanceStatusMachinesRuntime::Pod
-        | ChallengeInstanceStatusMachinesRuntime::Sysbox => {
+        | ChallengeInstanceStatusMachinesRuntime::Userns => {
             let pod = machine.pod.clone().ok_or(Denied::NoMachine)?;
             Ok(Target::Exec { namespace, pod })
         }
