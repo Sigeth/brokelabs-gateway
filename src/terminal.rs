@@ -41,11 +41,31 @@ use crate::app::{Access, AppState};
 const SHELL: &str = "export TERM=xterm-256color; cd \"$HOME\" 2>/dev/null; \
     if command -v bash >/dev/null 2>&1; then exec bash -l; else exec sh -l; fi";
 
+/// The superuser: userns terminals for it need no `su`.
+const ROOT_USER: &str = "root";
+
+/// The command opening the shell: as the container user, or as `user`
+/// through `su` (options before the user name, as busybox's su requires).
+fn exec_command(user: Option<&str>) -> Vec<String> {
+    match user {
+        None => vec!["/bin/sh".into(), "-c".into(), SHELL.into()],
+        Some(user) => ["su", "-l", "-s", "/bin/sh", user, "-c", SHELL]
+            .map(String::from)
+            .to_vec(),
+    }
+}
+
 /// Where a terminal opens.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Target {
-    /// Kubernetes exec into the machine container of a pod.
-    Exec { namespace: String, pod: String },
+    /// Kubernetes exec into the machine container of a pod: as the container
+    /// user, or as `user` through `su` (userns machines, whose container runs
+    /// as root).
+    Exec {
+        namespace: String,
+        pod: String,
+        user: Option<String>,
+    },
     /// SSH login on a vm machine, with the keys of the instance namespace.
     Ssh {
         namespace: String,
@@ -101,11 +121,25 @@ pub fn resolve(
         return Err(Denied::NoMachine);
     }
     match machine.runtime {
-        // Through exec, as the container user.
-        ChallengeInstanceStatusMachinesRuntime::Pod
-        | ChallengeInstanceStatusMachinesRuntime::Userns => {
+        // Through exec, as the container user (pod machines run as the
+        // student).
+        ChallengeInstanceStatusMachinesRuntime::Pod => {
             let pod = machine.pod.clone().ok_or(Denied::NoMachine)?;
-            Ok(Target::Exec { namespace, pod })
+            Ok(Target::Exec {
+                namespace,
+                pod,
+                user: None,
+            })
+        }
+        // Through exec as root, switching to the terminal's user like a login
+        // on a vm (D49).
+        ChallengeInstanceStatusMachinesRuntime::Userns => {
+            let pod = machine.pod.clone().ok_or(Denied::NoMachine)?;
+            Ok(Target::Exec {
+                namespace,
+                pod,
+                user: (user != ROOT_USER).then(|| user.clone()),
+            })
         }
         // Over SSH: the gateway only holds the student's key.
         ChallengeInstanceStatusMachinesRuntime::Vm => {
@@ -167,10 +201,14 @@ impl Machines for Kube {
 
     async fn shell(&self, target: &Target) -> anyhow::Result<Shell> {
         match target {
-            Target::Exec { namespace, pod } => {
+            Target::Exec {
+                namespace,
+                pod,
+                user,
+            } => {
                 let params = AttachParams::interactive_tty().container(MACHINE_CONTAINER);
                 let process = Api::<Pod>::namespaced(self.0.clone(), namespace)
-                    .exec(pod, ["/bin/sh", "-c", SHELL], &params)
+                    .exec(pod, exec_command(user.as_deref()), &params)
                     .await?;
                 exec_shell(process)
             }
@@ -424,6 +462,7 @@ mod tests {
             "spec": {"challenge": "hello", "owner": {"userID": "u1"}},
             "status": {"phase": phase, "namespace": "inst-hello-1", "machines": [
                 {"name": "box", "runtime": "pod", "ready": true, "pod": "box"},
+                {"name": "rootbox", "runtime": "userns", "ready": true, "pod": "rootbox"},
                 {"name": "vm", "runtime": "vm", "ready": true, "address": "vm.inst-hello-1.svc"},
                 {"name": "booting", "runtime": "vm", "ready": false, "address": "booting.inst-hello-1.svc"}]}
         }))
@@ -443,8 +482,36 @@ mod tests {
             target,
             Target::Exec {
                 namespace: "inst-hello-1".into(),
-                pod: "box".into()
+                pod: "box".into(),
+                user: None,
             }
+        );
+    }
+
+    #[test]
+    fn resolves_a_userns_machine_to_su_as_the_terminal_user() {
+        let target = resolve(
+            &claims("u1", "rootbox", terminal()),
+            Some(&instance("Ready")),
+        )
+        .unwrap();
+        assert_eq!(
+            target,
+            Target::Exec {
+                namespace: "inst-hello-1".into(),
+                pod: "rootbox".into(),
+                user: Some("student".into()),
+            }
+        );
+        let root = AccessKind::Terminal {
+            user: "root".into(),
+        };
+        let target = resolve(&claims("u1", "rootbox", root), Some(&instance("Ready"))).unwrap();
+        assert!(matches!(target, Target::Exec { user: None, .. }));
+        assert_eq!(exec_command(None)[0], "/bin/sh");
+        assert_eq!(
+            exec_command(Some("student"))[..6],
+            ["su", "-l", "-s", "/bin/sh", "student", "-c"]
         );
     }
 
